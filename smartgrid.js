@@ -3,21 +3,13 @@ let smartgrid = require('smart-grid');
 let settings = {
    outputStyle: 'less',
    columns: 12,
-   offset: '30px',
+   offset: '24px',
    mobileFirst: false,
    container: {
-      maxWidth: '1200px',
-      fields: '10px'
+      maxWidth: '1280px',
+      fields: '40px'
    },
    breakPoints: {
-      xld: {
-         width: '1800px',
-         fields: '100px'
-      },
-      ld: {
-         width: '1140px',
-         fields: '50px'
-      },
       md: {
          width: '940px',
          fields: '15px'
