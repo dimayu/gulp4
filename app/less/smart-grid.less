@@ -1,21 +1,25 @@
 @columns: 12;
 @atom: (100% / @columns);
 
+@break_lmd: 1200px;
 @break_md: 940px;
 @break_sm: 780px;
 @break_xxs: 440px;
 
 @offset: 24px;
+@offset_lmd: @offset;
 @offset_md: @offset;
 @offset_sm: @offset;
 @offset_xxs: @offset;
 
 @offset_one_side: (@offset / 2);
+@offset_lmd_one_side: (@offset_lmd / 2);
 @offset_md_one_side: (@offset_md / 2);
 @offset_sm_one_side: (@offset_sm / 2);
 @offset_xxs_one_side: (@offset_xxs / 2);
 
 @fields: 40px;
+@fields_lmd: 15px;
 @fields_md: 15px;
 @fields_sm: 10px;
 @fields_xxs: 10px;
@@ -23,6 +27,11 @@
 .wrapper-full(){
     padding-left: @fields;
     padding-right: @fields;
+
+    .lmd-block({
+        padding-left: @fields_lmd;
+        padding-right: @fields_lmd;
+    });
 
     .md-block({
         padding-left: @fields_md;
@@ -96,6 +105,11 @@
     width: ~"calc(@{val} - @{offset})";
 }
 
+.size-lmd(@n){
+    @val: 100% / @columns * @n;
+    .lmd(width, ~"calc(@{val} - @{offset_lmd})");
+}
+
 .size-md(@n){
     @val: 100% / @columns * @n;
     .md(width, ~"calc(@{val} - @{offset_md})");
@@ -141,6 +155,38 @@
 .shift-padding-right(@n){
     @val: 100% / @columns * @n;
     padding-right: ~"calc(@{val} + @{offset_one_side})";
+}
+
+.shift-lmd(@n){
+    @val: 100% / @columns * @n;
+    .lmd(margin-left, ~"calc(@{val} + @{offset_lmd_one_side})");
+    .lmd(margin-right, ~"calc(@{val} + @{offset_lmd_one_side})");
+}
+
+.shift-lmd-left(@n){
+    @val: 100% / @columns * @n;
+    .lmd(margin-left, ~"calc(@{val} + @{offset_lmd_one_side})");
+}
+
+.shift-lmd-right(@n){
+    @val: 100% / @columns * @n;
+    .lmd(margin-right, ~"calc(@{val} + @{offset_lmd_one_side})");
+}
+
+.shift-lmd-padding(@n){
+    @val: 100% / @columns * @n;
+    .lmd(padding-left, ~"calc(@{val} + @{offset_lmd_one_side})");
+    .lmd(padding-right, ~"calc(@{val} + @{offset_lmd_one_side})");
+}
+
+.shift-lmd-padding-left(@n){
+    @val: 100% / @columns * @n;
+    .lmd(padding-left, ~"calc(@{val} + @{offset_lmd_one_side})");
+}
+
+.shift-lmd-padding-right(@n){
+    @val: 100% / @columns * @n;
+    .lmd(padding-right, ~"calc(@{val} + @{offset_lmd_one_side})");
 }
 
 .shift-md(@n){
@@ -237,6 +283,18 @@
 .shift-xxs-padding-right(@n){
     @val: 100% / @columns * @n;
     .xxs(padding-right, ~"calc(@{val} + @{offset_xxs_one_side})");
+}
+
+.lmd(@name, @value){
+    @media screen and (max-width: @break_lmd){
+        @{name}: @value;
+    }
+}
+
+.lmd-block(@content){
+    @media screen and (max-width: @break_lmd){
+        @content();
+    }
 }
 
 .md(@name, @value){

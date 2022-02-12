@@ -10,6 +10,10 @@ let settings = {
       fields: '40px'
    },
    breakPoints: {
+      lmd: {
+         width: '1200px',
+         fields: '15px'
+      },
       md: {
          width: '940px',
          fields: '15px'
