@@ -1,0 +1,21 @@
+@import 'variables.scss';
+
+@import 'global.scss';
+
+@import "fonts.scss";
+
+@import "slider.scss";
+
+@import "smart-grid.scss";
+
+@include reset();
+
+a {
+  text-decoration: none;
+  color: #333333;
+  transition: 0.3s;
+}
+
+.wrapper {
+  @include wrapper();
+}

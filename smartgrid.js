@@ -1,18 +1,18 @@
 let smartgrid = require('smart-grid');
 
 let settings = {
-   outputStyle: 'less',
+   outputStyle: 'scss',
    columns: 12,
-   offset: '24px',
+   offset: '16px',
    mobileFirst: false,
    container: {
-      maxWidth: '1280px',
-      fields: '40px'
+      maxWidth: '1390px',
+      fields: '0px'
    },
    breakPoints: {
       lmd: {
-         width: '1200px',
-         fields: '15px'
+         width: '1480px',
+         fields: '40px'
       },
       md: {
          width: '940px',
@@ -29,7 +29,7 @@ let settings = {
    }
 };
 
-smartgrid('./app/less', settings);
+smartgrid('./src/scss', settings);
 
 
 

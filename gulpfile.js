@@ -1,132 +1,142 @@
-// Определяем переменную "preprocessor"
-let preprocessor = 'less';
+'use strict';
 
-// Определяем константы Gulp
-const { src, dest, parallel, series, watch } = require('gulp');
+const gulp = require('gulp');
 
-// Подключаем Browsersync
+const sass = require('gulp-sass');
+const sassGlob = require('gulp-sass-glob');
+const groupMediaQueries = require('gulp-group-css-media-queries');
+const cleanCSS = require('gulp-cleancss');
+const postcss = require('gulp-postcss');
+const autoprefixer = require('autoprefixer');
+
+const concat = require('gulp-concat');
+const uglify = require('gulp-uglify');
+const babel = require('gulp-babel');
+
+const rename = require('gulp-rename');
+const sourcemaps = require('gulp-sourcemaps');
+const replace = require('gulp-replace');
+const del = require('del');
+const plumber = require('gulp-plumber');
 const browserSync = require('browser-sync').create();
 
-// Подключаем gulp-concat
-const concat = require('gulp-concat');
+const svgstore = require('gulp-svgstore');
+const svgmin = require('gulp-svgmin');
+const imagemin = require('gulp-imagemin');
 
-// Подключаем gulp-uglify-es
-const uglify = require('gulp-uglify-es').default;
+const paths = {
+  src: './src/',              // paths.src
+  build: './build/'           // paths.build
+};
 
-// Подключаем модули gulp-sass и gulp-less
-const sass = require('gulp-sass')(require('sass'));
-const less = require('gulp-less');
+function styles() {
+  return gulp.src(paths.src + 'scss/style.scss')
+    .pipe(plumber())
+    .pipe(sourcemaps.init())
+    .pipe(sassGlob())
+    .pipe(sass()) // { outputStyle: 'compressed' }
+    .pipe(groupMediaQueries())
+    .pipe(postcss([
+      autoprefixer({browsers: ['last 2 version']}),
+    ]))
+    .pipe(cleanCSS())
+    .pipe(rename({suffix: ".min"}))
+    .pipe(sourcemaps.write('/'))
+    .pipe(gulp.dest(paths.build + 'css/'));
+}
 
-// Подключаем Autoprefixer
-const autoprefixer = require('gulp-autoprefixer');
-
-// Подключаем модуль gulp-clean-css
-const cleancss = require('gulp-clean-css');
-
-// Подключаем compress-images для работы с изображениями
-const imagecomp = require('compress-images');
-
-// Подключаем модуль del
-const del = require('del');
-
-// Определяем логику работы Browsersync
-function browsersync() {
-	browserSync.init({ // Инициализация Browsersync
-		server: { baseDir: 'app/' }, // Указываем папку сервера
-		notify: false, // Отключаем уведомления
-		online: true // Режим работы: true или false
-	})
+function svgSprite() {
+  return gulp.src(paths.src + 'svg/*.svg')
+    .pipe(svgmin(function (file) {
+      return {
+        plugins: [{
+          cleanupIDs: {
+            minify: true
+          }
+        }]
+      }
+    }))
+    .pipe(svgstore({inlineSvg: true}))
+    .pipe(rename('sprite-svg.svg'))
+    .pipe(gulp.dest(paths.build + 'img/'));
 }
 
 function scripts() {
-	return src([ // Берём файлы из источников
-		'node_modules/jquery/dist/jquery.min.js', // Пример подключения библиотеки
-		'app/js/app.js', // Пользовательские скрипты, использующие библиотеку, должны быть подключены в конце
-		])
-	.pipe(concat('app.min.js')) // Конкатенируем в один файл
-	.pipe(uglify()) // Сжимаем JavaScript
-	.pipe(dest('app/js/')) // Выгружаем готовый файл в папку назначения
-	.pipe(browserSync.stream()) // Триггерим Browsersync для обновления страницы
+  return gulp.src(paths.src + 'js/*.js')
+    .pipe(plumber())
+    .pipe(babel({
+      presets: ['env']
+    }))
+    .pipe(uglify())
+    .pipe(concat('script.min.js'))
+    .pipe(gulp.dest(paths.build + 'js/'))
 }
 
-function styles() {
-	return src('app/' + preprocessor + '/main.' + preprocessor + '') // Выбираем источник: "app/sass/main.sass" или "app/less/main.less"
-	.pipe(eval(preprocessor)()) // Преобразуем значение переменной "preprocessor" в функцию
-	.pipe(concat('app.min.css')) // Конкатенируем в файл app.min.js
-	.pipe(autoprefixer({ overrideBrowserslist: ['last 10 versions'], grid: true })) // Создадим префиксы с помощью Autoprefixer
-	.pipe(cleancss( { level: { 1: { specialComments: 0 } }/* , format: 'beautify' */ } )) // Минифицируем стили
-	.pipe(dest('app/css/')) // Выгрузим результат в папку "app/css/"
-	.pipe(browserSync.stream()) // Сделаем инъекцию в браузер
+function scriptsVendors() {
+  return gulp.src([
+    'node_modules/jquery/dist/jquery.min.js',
+    'node_modules/slick-carousel/slick/slick.min.js',
+    'node_modules/svg4everybody/dist/svg4everybody.min.js'
+  ])
+    .pipe(concat('vendors.min.js'))
+    .pipe(gulp.dest(paths.build + 'js/'))
 }
 
-async function images() {
-	imagecomp(
-		"app/images/src/**/*", // Берём все изображения из папки источника
-		"app/images/dest/", // Выгружаем оптимизированные изображения в папку назначения
-		{ compress_force: false, statistic: true, autoupdate: true }, false, // Настраиваем основные параметры
-		{ jpg: { engine: "mozjpeg", command: ["-quality", "75"] } }, // Сжимаем и оптимизируем изображеня
-		{ png: { engine: "pngquant", command: ["--quality=75-100", "-o"] } },
-		{ svg: { engine: "svgo", command: "--multipass" } },
-		{ gif: { engine: "gifsicle", command: ["--colors", "64", "--use-col=web"] } },
-		function (err, completed) { // Обновляем страницу по завершению
-			if (completed === true) {
-				browserSync.reload()
-			}
-		}
-	)
+function htmls() {
+  return gulp.src(paths.src + '*.html')
+    .pipe(plumber())
+    .pipe(replace(/\n\s*<!--DEV[\s\S]+?-->/gm, ''))
+    .pipe(gulp.dest(paths.build));
 }
 
-function cleanimg() {
-	return del('app/images/dest/**/*', { force: true }) // Удаляем всё содержимое папки "app/images/dest/"
+function images() {
+  return gulp.src(paths.src + 'img/*.{jpg,jpeg,png,gif,svg}')
+    .pipe(imagemin())
+    .pipe(gulp.dest(paths.build + 'img/'));
 }
 
-function buildcopy() {
-	return src([ // Выбираем нужные файлы
-		'app/css/**/*.min.css',
-		'app/js/**/*.min.js',
-		'app/images/dest/**/*',
-		'app/**/*.html',
-		], { base: 'app' }) // Параметр "base" сохраняет структуру проекта при копировании
-	.pipe(dest('dist')) // Выгружаем в папку с финальной сборкой
-}
- 
-function cleandist() {
-	return del('dist/**/*', { force: true }) // Удаляем всё содержимое папки "dist/"
+const copyFonts = () => {
+  return gulp.src('src/fonts/*.{svg,eot,ttf,woff,woff2}')
+    .pipe(gulp.dest(paths.build + 'fonts/'));
 }
 
-function startwatch() {
- 
-	// Выбираем все файлы JS в проекте, а затем исключим с суффиксом .min.js
-	watch(['app/**/*.js', '!app/**/*.min.js'], scripts);
-	
-	// Мониторим файлы препроцессора на изменения
-	watch('app/**/' + preprocessor + '/**/*', styles);
- 
-	// Мониторим файлы HTML на изменения
-	watch('app/**/*.html').on('change', browserSync.reload);
- 
-	// Мониторим папку-источник изображений и выполняем images(), если есть изменения
-	watch('app/images/src/**/*', images);
- 
+function clean() {
+  return del('build/')
 }
 
-// Экспортируем функцию browsersync() как таск browsersync. Значение после знака = это имеющаяся функция.
-exports.browsersync = browsersync;
- 
-// Экспортируем функцию scripts() в таск scripts
-exports.scripts = scripts;
- 
-// Экспортируем функцию styles() в таск styles
+function watch() {
+  gulp.watch(paths.src + 'scss/*.scss', styles);
+  gulp.watch(paths.src + 'js/*.js', scripts);
+  gulp.watch(paths.src + '*.html', htmls);
+  gulp.watch(paths.src + 'fonts/*.{svg,eot,ttf,woff,woff2}', copyFonts);
+}
+
+function serve() {
+  browserSync.init({
+    server: {
+      baseDir: paths.build
+    }
+  });
+  browserSync.watch(paths.build + '**/*.*', browserSync.reload);
+}
+
 exports.styles = styles;
-
-// Экспорт функции images() в таск images
+exports.scripts = scripts;
+exports.scriptsVendors = scriptsVendors;
+exports.htmls = htmls;
 exports.images = images;
+exports.svgSprite = svgSprite;
+exports.copyFonts = copyFonts;
+exports.clean = clean;
+exports.watch = watch;
 
-// Экспортируем функцию cleanimg() как таск cleanimg
-exports.cleanimg = cleanimg;
+gulp.task('build', gulp.series(
+  clean,
+  gulp.parallel(styles, svgSprite, scripts, scriptsVendors, htmls, images, copyFonts)
+));
 
-// Создаём новый таск "build", который последовательно выполняет нужные операции
-exports.build = series(cleandist, styles, scripts, images, buildcopy);
-
-// Экспортируем дефолтный таск с нужным набором функций
-exports.default = parallel(styles, scripts, browsersync, startwatch);
+gulp.task('default', gulp.series(
+  clean,
+  gulp.parallel(styles, svgSprite, scripts, scriptsVendors, htmls, images, copyFonts),
+  gulp.parallel(watch, serve)
+));
